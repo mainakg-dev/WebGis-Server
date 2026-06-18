@@ -38,7 +38,7 @@ export class AuthController {
 
     response.setCookie('token', result.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'none',
       path: '/',
       maxAge: 7 * 24 * 60 * 60, // 7 days (matching token expiry)
@@ -52,6 +52,9 @@ export class AuthController {
   signout(@Res({ passthrough: true }) response: FastifyReply) {
     response.clearCookie('token', {
       path: '/',
+      sameSite: 'none',
+      httpOnly: true,
+      secure: true,
     });
     return { message: 'Logged out successfully' };
   }
