@@ -128,4 +128,74 @@ export class S3Service {
       },
     });
   }
+
+  async getReportUploadPresignedUrl(
+    userId: number,
+    filename: string,
+    filetype: string,
+    towerId: string,
+    type: string,
+  ) {
+    const bucket = this.configService.getOrThrow<string>('AWS_S3_BUCKET');
+    const uniqueId = Math.random().toString(36).substring(2, 8);
+    const key = `uploads/${userId}/reports/${towerId}/${type}/${uniqueId}-${filename}`;
+
+    const command = new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ContentType: filetype,
+    });
+
+    const presignedUrl = await getSignedUrl(this.s3Client, command, {
+      expiresIn: 900,
+    });
+
+    const region = this.configService.getOrThrow<string>('AWS_REGION');
+    const reportUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+
+    const dbReport = await this.prisma.report.create({
+      data: {
+        key,
+        url: reportUrl,
+        towerId,
+        type,
+        userId,
+      },
+    });
+
+    return {
+      presignedUrl,
+      imageUrl: reportUrl,
+      report: dbReport,
+    };
+  }
+
+  async getReportsForTower(towerId: string) {
+    const reports = await this.prisma.report.findMany({
+      where: { towerId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const bucket = this.configService.getOrThrow<string>('AWS_S3_BUCKET');
+    return Promise.all(
+      reports.map(async (report) => {
+        try {
+          const getCommand = new GetObjectCommand({
+            Bucket: bucket,
+            Key: report.key,
+          });
+          const signedUrl = await getSignedUrl(this.s3Client, getCommand, {
+            expiresIn: 3600,
+          });
+          return {
+            ...report,
+            url: signedUrl,
+          };
+        } catch (err: any) {
+          this.logger.error(`Error signing URL for report ${report.id}: ${err.message}`);
+          return report;
+        }
+      }),
+    );
+  }
 }

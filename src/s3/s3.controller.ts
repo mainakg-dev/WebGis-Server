@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Controller,
   Get,
+  Param,
   Query,
   Request,
   UseGuards,
@@ -33,6 +34,39 @@ export class S3Controller {
       filetype,
       folder,
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('report-presigned-url')
+  async getReportUploadPresignedUrl(
+    @Request() req: any,
+    @Query('filename') filename: string,
+    @Query('filetype') filetype: string,
+    @Query('towerId') towerId: string,
+    @Query('type') type: string,
+  ) {
+    if (!filename || !filetype || !towerId || !type) {
+      throw new BadRequestException(
+        'filename, filetype, towerId, and type query parameters are required',
+      );
+    }
+    if (type !== 'thermal' && type !== 'findings') {
+      throw new BadRequestException('type must be either thermal or findings');
+    }
+    const userId = req.user.sub;
+    return this.s3Service.getReportUploadPresignedUrl(
+      userId,
+      filename,
+      filetype,
+      towerId,
+      type,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('reports/:towerId')
+  async getReportsForTower(@Param('towerId') towerId: string) {
+    return this.s3Service.getReportsForTower(towerId);
   }
 
   @UseGuards(JwtAuthGuard)
