@@ -20,12 +20,13 @@ model User {
 }
 
 model Image {
-  id        Int      @id @default(autoincrement())
-  key       String   @unique
-  url       String
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  key          String   @unique
+  url          String
+  thumbnailUrl String?
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
 }
 
 model Report {

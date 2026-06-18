@@ -44,6 +44,7 @@ export class S3Service {
     const uniqueId = Math.random().toString(36).substring(2, 8);
     const folderPath = folder ? `${folder}/` : '';
     const key = `uploads/${userId}/${folderPath}${uniqueId}-${filename}`;
+    const thumbKey = `uploads/${userId}/${folderPath}thumbnails/${uniqueId}-${filename}`;
 
     const command = new PutObjectCommand({
       Bucket: bucket,
@@ -51,26 +52,40 @@ export class S3Service {
       ContentType: filetype,
     });
 
+    const thumbCommand = new PutObjectCommand({
+      Bucket: bucket,
+      Key: thumbKey,
+      ContentType: 'image/jpeg',
+    });
+
     // Generate PUT presigned URL valid for 15 mins (900s)
     const presignedUrl = await getSignedUrl(this.s3Client, command, {
       expiresIn: 900,
     });
 
+    const thumbPresignedUrl = await getSignedUrl(this.s3Client, thumbCommand, {
+      expiresIn: 900,
+    });
+
     const region = this.configService.getOrThrow<string>('AWS_REGION');
     const imageUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
+    const thumbUrl = `https://${bucket}.s3.${region}.amazonaws.com/${thumbKey}`;
 
     // Save image metadata in the database
     const dbImage = await this.prisma.image.create({
       data: {
         key,
         url: imageUrl,
+        thumbnailUrl: thumbUrl,
         userId,
       },
     });
 
     return {
       presignedUrl,
+      thumbPresignedUrl,
       imageUrl,
+      thumbnailUrl: thumbUrl,
       image: dbImage,
     };
   }
