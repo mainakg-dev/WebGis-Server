@@ -9,10 +9,10 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { AuthService } from './auth.service.js';
 import { AuthDto } from './dto/auth.dto.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
-import type { FastifyReply, FastifyRequest } from 'fastify';
 
 interface AuthenticatedRequest extends FastifyRequest {
   user: { sub: number; username: string };
@@ -39,7 +39,7 @@ export class AuthController {
     response.setCookie('token', result.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'none',
       path: '/',
       maxAge: 7 * 24 * 60 * 60, // 7 days (matching token expiry)
     });
