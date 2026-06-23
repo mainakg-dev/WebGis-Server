@@ -16,7 +16,9 @@ model User {
   password  String
   images    Image[]
   reports   Report[]
-  createdAt DateTime @default(now())
+  videos      Video[]
+  towerVideos TowerVideo[]
+  createdAt   DateTime @default(now())
 }
 
 model Image {
@@ -38,4 +40,37 @@ model Report {
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
+}
+
+model Video {
+  id           Int      @id @default(autoincrement())
+  key          String   @unique
+  url          String
+  thumbnailKey String?
+  thumbnailUrl String?
+  towerFromId  String
+  towerToId    String
+  type         String   // 'rgb' or 'thermal'
+  filename     String
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@unique([towerFromId, towerToId, type])
+}
+
+model TowerVideo {
+  id           Int      @id @default(autoincrement())
+  key          String   @unique
+  url          String
+  thumbnailKey String?
+  thumbnailUrl String?
+  towerId      String
+  type         String   // 'rgb' or 'thermal'
+  filename     String
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@unique([towerId, type])
 }
